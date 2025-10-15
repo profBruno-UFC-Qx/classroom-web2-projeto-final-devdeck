@@ -6,7 +6,7 @@ DevDeck é uma plataforma web fullstack que permite a desenvolvedores de softwar
 
 ## :technologist: Membros da equipe
 
-* (Sua Matrícula), (Seu Nome Completo), Ciência da Computação
+* 586043 - Francisco Edinaldo dos Santos Silva, Ciência da Computação
 
 ## :bulb: Objetivo Geral
 O objetivo geral do DevDeck é fornecer uma ferramenta centralizada e de fácil uso para que desenvolvedores possam construir uma presença online profissional, consolidando suas competências e projetos em um único local, a fim de aumentar sua visibilidade para recrutadores e para a comunidade de tecnologia.
