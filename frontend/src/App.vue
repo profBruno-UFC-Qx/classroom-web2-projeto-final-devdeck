@@ -1,19 +1,20 @@
 <script setup lang="ts">
+// --- Imports ---
 import { ref, computed } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import logoImg from '@/assets/img/img-logo-header-50px.png'
 import SearchModal from '@/components/common/SearchModal.vue'
 
-// Hooks & Estado
+// --- Hooks & Estado ---
 const route = useRoute()
 const router = useRouter()
 const isSearchOpen = ref(false)
 
-// Computados
+// --- Computados ---
 const isDashboard = computed(() => route.path.includes('/dashboard'))
-const isHomePage = computed(() => route.path === '/')
+const isHomePage = computed(() => route.path === '/') 
 
-// Ações
+// --- Métodos ---
 function handleLogout() {
   router.push('/')
 }
@@ -87,7 +88,7 @@ main {
   scroll-behavior: smooth;
 }
 
-/* --- Header --- */
+/* --- Header & Wrapper --- */
 header {
   background-color: rgb(255, 255, 255);
   backdrop-filter: blur(10px); 
@@ -96,12 +97,10 @@ header {
   display: flex;
   align-items: center;
   font-family: 'Montserrat', sans-serif;
-  
   position: fixed;
   top: 15px; 
   left: 50%; 
   transform: translateX(-50%); 
-  
   width: 90%; 
   max-width: 1200px; 
   border-radius: 50px; 
@@ -128,7 +127,7 @@ header {
 .search-trigger {
   flex: 1;
   max-width: 200px;
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(90deg, var(--color-primary-1) 0%, var(--color-secondary-2) 100%);
   border: none;
   border-radius: 50px;
   height: 38px;
@@ -155,7 +154,7 @@ header {
   text-overflow: ellipsis;
 }
 
-/* --- Navegação --- */
+/* --- Navegação & Links --- */
 nav {
   display: flex;
   gap: 1rem;
@@ -169,18 +168,12 @@ nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  
   padding: 5px 24px;
   border-radius: 50px;
-  
-  /* Borda Gradiente */
   border: 2px solid transparent;
-  background-image: 
-    linear-gradient(white, white), 
-    linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background-image: linear-gradient(white, white), linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;
-  
   color: var(--color-primary);
   font-weight: 600;
   font-size: 0.9rem;
@@ -194,7 +187,7 @@ nav {
 }
 
 .nav-item:hover {
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(90deg, var(--color-primary-1) 0%, var(--color-secondary-2) 100%);
   border-color: var(--color-secondary);
   color: white;
 }
@@ -208,7 +201,7 @@ nav {
   box-shadow: 0 4px 10px rgba(143, 0, 255, 0.3);
 }
 
-/* --- Ações do Usuário --- */
+/* --- Elementos de Usuário --- */
 .separator {
   width: 1px;
   height: 25px;
@@ -240,7 +233,7 @@ nav {
   color: white;
 }
 
-/* --- Responsividade --- */
+/* --- Responsividade (Mobile) --- */
 @media (max-width: 999px) {
   .search-trigger {
     max-width: 100px;
@@ -263,7 +256,7 @@ nav {
   .user-label { display: none; }
 }
 
-/* --- Animações --- */
+/* --- Transições (Vue Transition) --- */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
