@@ -54,7 +54,7 @@ async function handleDelete(id: number) {
     await store.removeProject(id)
     isModalOpen.value = false
   } catch (error) {
-    // Error handling delegated to store
+    alert('Erro ao deletar o projeto.')
   } finally {
     isActionLoading.value = false
   }
