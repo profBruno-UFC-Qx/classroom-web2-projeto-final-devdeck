@@ -1,103 +1,230 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { api } from '@/services/api'
+import { useAuthStore } from './auth'
+
+// --- Interfaces ---
+export interface Project {
+  id: number
+  title: string
+  shortDescription: string
+  detailedDescription: string
+  images: string[] 
+  tags: string[]
+  linkRepo?: string
+  linkDeploy?: string
+}
+
+export interface Experience {
+  id: number
+  role: string
+  company: string
+  period: string
+  description: string
+}
+
+export interface Education {
+  id: number
+  institution: string
+  course: string
+  year: string
+  certificateUrl: string
+}
+
+export interface UserProfile {
+  name: string
+  role: string
+  location: string
+  bio: string
+  avatarUrl: string
+  skills: string[]
+  social: {
+    github?: string
+    linkedin?: string
+    website?: string
+  }
+  experiences: Experience[]
+  education: Education[]
+}
 
 export const usePortfolioStore = defineStore('portfolio', () => {
-  
-  // --- Estado: Perfil do Usuário ---
-  const userProfile = ref({
-    name: 'Edinaldo Dev',
-    role: 'Estudante de Ciência da Computação',
-    bio: 'Apaixonado por tecnologia, focado em desenvolvimento Web Fullstack com Vue e Node.js. Buscando oportunidades de estágio.',
-    location: 'Quixadá, CE',
-    email: 'contato@edinaldo.dev',
-    avatar: 'https://github.com/edinaldogit.png',
-    linkedin: 'linkedin.com/in/seunome',
-    github: 'github.com/edinaldogit'
+  const authStore = useAuthStore()
+
+  // --- State ---
+  const projects = ref<Project[]>([])
+  const isLoading = ref(false)
+  const userProfile = ref<UserProfile>({
+    name: 'Dev',
+    role: 'Fullstack',
+    location: 'Brasil',
+    bio: '',
+    avatarUrl: '',
+    skills: [],
+    social: {},
+    experiences: [],
+    education: []
   })
 
-  // --- Estado: Listas de Dados ---
-  const projects = ref([
-    { 
-      id: 1, 
-      title: 'DevDeck', 
-      description: 'Plataforma para criação de portfólios e currículos online.', 
-      link: 'https://github.com/edinaldogit/devdeck' 
-    },
-    { 
-      id: 2, 
-      title: 'TaskFlow', 
-      description: 'Aplicação de gestão de tarefas estilo Kanban.', 
-      link: 'https://github.com/edinaldogit/taskflow' 
+  // --- Project Actions ---
+  async function fetchProjects() {
+    isLoading.value = true
+    try {
+      const userId = authStore.user?.id
+      const url = userId 
+        ? `/projects?limit=50&user_id=${userId}` 
+        : '/projects?limit=50'
+
+      const { data } = await api.get(url)
+      
+      projects.value = data.data.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        shortDescription: p.description,
+        detailedDescription: p.description,
+        images: p.images || [], 
+        tags: [], 
+        linkRepo: p.linkRepo,
+        linkDeploy: p.linkDeploy
+      }))
+    } catch (error) {
+      console.error('Fetch projects error:', error)
+    } finally {
+      isLoading.value = false
     }
-  ])
+  }
 
-  const experiences = ref([
-    {
-      id: 1,
-      title: 'Monitoria de Programação',
-      institution: 'UFC Quixadá',
-      period: 'Fev 2024 - Atual',
-      description: 'Auxílio aos alunos na disciplina de Fundamentos de Programação, tirando dúvidas de C e Python.'
-    },
-    {
-      id: 2,
-      title: 'Desenvolvimento Web 2',
-      institution: 'Projeto Acadêmico',
-      period: 'Out 2025 - Nov 2025',
-      description: 'Desenvolvimento de uma aplicação Fullstack completa utilizando Vue 3 e Node.js.'
+  async function createNewProject(newProjectData: Partial<Project>) {
+    try {
+      const response = await api.post('/projects', {
+        title: newProjectData.title || 'Novo Projeto',
+        description: newProjectData.shortDescription || 'Sem descrição',
+        linkRepo: newProjectData.linkRepo || '',
+        linkDeploy: newProjectData.linkDeploy || '',
+        images: newProjectData.images || [] 
+      })
+
+      const created = response.data
+      const frontendProject: Project = {
+        id: created.id,
+        title: created.title,
+        shortDescription: created.description,
+        detailedDescription: created.description,
+        images: created.images || [],
+        tags: ['Novo'],
+        linkRepo: created.linkRepo,
+        linkDeploy: created.linkDeploy
+      }
+
+      projects.value.unshift(frontendProject)
+      return true
+    } catch (error) {
+      console.error('Create project error:', error)
+      throw error
     }
-  ])
-
-  const publicUsers = ref([
-    { username: 'edinaldo', name: 'Edinaldo Dev', role: 'Fullstack Developer', avatar: 'https://i.pravatar.cc/150?img=11' },
-    { username: 'maria', name: 'Maria Silva', role: 'UX Designer', avatar: 'https://i.pravatar.cc/150?img=5' },
-    { username: 'joao', name: 'João Souza', role: 'Backend Engineer', avatar: 'https://i.pravatar.cc/150?img=3' },
-    { username: 'ana', name: 'Ana Clara', role: 'Data Scientist', avatar: 'https://i.pravatar.cc/150?img=9' },
-  ])
-
-  // --- Actions: Gerenciamento de Projetos ---
-  function addProject(title: string, description: string, link: string) {
-    projects.value.push({
-      id: Date.now(),
-      title,
-      description,
-      link
-    })
   }
 
-  function removeProject(id: number) {
-    projects.value = projects.value.filter(p => p.id !== id)
+  async function removeProject(id: number) {
+    try {
+      await api.delete(`/projects/${id}`)
+      projects.value = projects.value.filter(p => p.id !== id)
+    } catch (error: any) {
+      const message = error.response?.status === 403 ? 'Sem permissão.' : 'Erro ao deletar.'
+      alert(message)
+    }
   }
 
-  // --- Actions: Gerenciamento de Experiências ---
-  function addExperience(title: string, institution: string, period: string, description: string) {
-    experiences.value.push({
-      id: Date.now(),
-      title,
-      institution,
-      period,
-      description
-    })
+  async function updateProject(project: Partial<Project>) {
+    if (!project.id) return
+
+    try {
+      await api.put(`/projects/${project.id}`, {
+        title: project.title,
+        description: project.detailedDescription || project.shortDescription,
+        linkRepo: project.linkRepo,
+        linkDeploy: project.linkDeploy,
+        images: project.images || []
+      })
+
+      const index = projects.value.findIndex(p => p.id === project.id)
+      if (index !== -1) {
+        projects.value[index] = { ...projects.value[index], ...project } as Project
+      }
+      return true
+    } catch (error: any) {
+      throw new Error(error.response?.status === 403 ? 'Sem permissão.' : 'Erro ao salvar.')
+    }
   }
 
-  function removeExperience(id: number) {
-    experiences.value = experiences.value.filter(e => e.id !== id)
+  // --- Profile Actions ---
+  async function fetchUserProfile() {
+    const userId = authStore.user?.id
+    if (!userId) return
+
+    try {
+      const { data } = await api.get(`/users/public/${userId}`)
+      userProfile.value = {
+        name: data.name,
+        role: data.role,
+        location: data.location || '',
+        bio: data.bio || '',
+        avatarUrl: data.avatarUrl || '',
+        skills: data.skills || [],
+        social: data.social || {},
+        experiences: data.experiences || [],
+        education: data.education || []
+      }
+    } catch (error) {
+      console.error('Fetch profile error:', error)
+    }
   }
 
-  // --- Actions: Atualização de Perfil ---
-  function updateProfile(newData: any) {
-    Object.assign(userProfile.value, newData)
+  async function updateUserProfile(newProfile: UserProfile) {
+    const cleanData = JSON.parse(JSON.stringify(newProfile))
+    userProfile.value = { ...newProfile }
+
+    try {
+      await api.put('/users/profile', cleanData)
+    } catch (error: any) {
+      console.error('Update profile error:', error.response?.data || error.message)
+      throw new Error('Falha ao salvar no servidor')
+    }
+  }
+
+  // --- Skill Actions ---
+  async function addSkill(skill: string) {
+    const s = skill.trim()
+    if (s && !userProfile.value.skills.includes(s)) {
+      const updatedSkills = [...userProfile.value.skills, s]
+      try {
+        await updateUserProfile({ ...userProfile.value, skills: updatedSkills })
+      } catch (error) {
+        console.error("Add skill error")
+        throw error
+      }
+    }
+  }
+
+  async function removeSkill(skillToRemove: string) {
+    const updatedSkills = userProfile.value.skills.filter(s => s !== skillToRemove)
+    try {
+      await updateUserProfile({ ...userProfile.value, skills: updatedSkills })
+    } catch (error) {
+      console.error("Remove skill error")
+      throw error
+    }
   }
 
   return { 
-    userProfile, 
     projects, 
-    experiences,
-    publicUsers, 
-    addProject, 
-    removeProject,
-    addExperience,
-    removeExperience,
-    updateProfile
+    userProfile, 
+    isLoading,
+    fetchProjects,
+    createNewProject, 
+    removeProject, 
+    updateProject, 
+    fetchUserProfile,
+    updateUserProfile,
+    addSkill,
+    removeSkill
   }
 })

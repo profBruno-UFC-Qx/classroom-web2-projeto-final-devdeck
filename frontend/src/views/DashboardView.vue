@@ -1,47 +1,62 @@
 <script setup lang="ts">
-// --- Imports e Configuração ---
-import { ref } from 'vue'
-import { usePortfolioStore } from '../stores/portfolio'
+import { ref, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { usePortfolioStore, type Project } from '@/stores/portfolio'
 
+// Components
+import ProjectCard from '@/components/dashboard/ProjectCard.vue'
+import ProjectModal from '@/components/dashboard/ProjectModal.vue'
+
+// --- Setup & State ---
 const store = usePortfolioStore()
+const { projects, isLoading } = storeToRefs(store)
 
-// --- Estado: Projetos ---
-const projTitle = ref('')
-const projDesc = ref('')
-const projLink = ref('')
+const isModalOpen = ref(false)
+const selectedProject = ref<Project | null>(null)
+const isActionLoading = ref(false)
 
-// --- Estado: Experiências ---
-const expTitle = ref('')
-const expInst = ref('')
-const expPeriod = ref('')
-const expDesc = ref('')
+// --- Lifecycle ---
+onMounted(async () => {
+  await store.fetchProjects()
+})
 
-// --- Ações ---
-function handleAddProject() {
-  if (projTitle.value.trim()) {
-    store.addProject(
-      projTitle.value,
-      projDesc.value || 'Sem descrição',
-      projLink.value || '#'
-    )
-    projTitle.value = ''
-    projDesc.value = ''
-    projLink.value = ''
+// --- Modal Handlers ---
+function openNewProject() {
+  selectedProject.value = null
+  isModalOpen.value = true
+}
+
+function openEditProject(project: Project) {
+  selectedProject.value = project
+  isModalOpen.value = true
+}
+
+// --- Persistence Methods ---
+async function handleSave(projectData: Partial<Project>) {
+  isActionLoading.value = true
+  try {
+    if (selectedProject.value) {
+      await store.updateProject({ ...projectData, id: selectedProject.value.id })
+    } else {
+      await store.createNewProject(projectData)
+    }
+    isModalOpen.value = false
+  } catch (error: any) {
+    alert(error.message)
+  } finally {
+    isActionLoading.value = false
   }
 }
 
-function handleAddExperience() {
-  if (expTitle.value.trim() && expInst.value.trim()) {
-    store.addExperience(
-      expTitle.value,
-      expInst.value,
-      expPeriod.value || 'Atualmente',
-      expDesc.value || '...'
-    )
-    expTitle.value = ''
-    expInst.value = ''
-    expPeriod.value = ''
-    expDesc.value = ''
+async function handleDelete(id: number) {
+  isActionLoading.value = true
+  try {
+    await store.removeProject(id)
+    isModalOpen.value = false
+  } catch (error) {
+    // Error handling delegated to store
+  } finally {
+    isActionLoading.value = false
   }
 }
 </script>
@@ -49,161 +64,125 @@ function handleAddExperience() {
 <template>
   <div class="dashboard-container">
     
-    <div class="header-dash">
-      <h1>⚙️ Painel de Controle</h1>
-      <p>Gerencie seu Portfólio e seu Currículo em um só lugar.</p>
-    </div>
-
-    <div class="grid-layout">
+    <div class="dash-header">
+      <div class="greeting">
+        <h1>Meus Projetos</h1>
+        <p>Gerencie seu portfólio e mostre seu melhor trabalho.</p>
+      </div>
       
-      <section class="panel">
-        <h2>Meus Projetos</h2>
-        
-        <div class="form-box">
-          <input v-model="projTitle" placeholder="Nome do Projeto (ex: DevDeck)" />
-          <input v-model="projDesc" placeholder="Descrição curta" />
-          <input v-model="projLink" placeholder="Link (GitHub/Deploy)" />
-          <button @click="handleAddProject" class="btn-add">Adicionar Projeto</button>
-        </div>
-
-        <div class="list-items">
-          <div v-for="item in store.projects" :key="item.id" class="card-item project-border">
-            <div class="card-content">
-              <h3>{{ item.title }}</h3>
-              <small>{{ item.description }}</small>
-              <a :href="item.link" target="_blank" class="link-text">Acessar Link</a>
-            </div>
-            <button @click="store.removeProject(item.id)" class="btn-delete">🗑️</button>
-          </div>
-          <p v-if="store.projects.length === 0" class="empty-msg">Nenhum projeto.</p>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>Experiência & Formação</h2>
-        
-        <div class="form-box">
-          <input v-model="expTitle" placeholder="Cargo ou Curso (ex: Dev Jr)" />
-          <input v-model="expInst" placeholder="Empresa ou Instituição" />
-          <input v-model="expPeriod" placeholder="Período (ex: 2023 - Atual)" />
-          <input v-model="expDesc" placeholder="Descrição das atividades" />
-          <button @click="handleAddExperience" class="btn-add btn-secondary">Adicionar Experiência</button>
-        </div>
-
-        <div class="list-items">
-          <div v-for="item in store.experiences" :key="item.id" class="card-item exp-border">
-            <div class="card-content">
-              <h3>{{ item.title }}</h3>
-              <span class="institution">{{ item.institution }}</span>
-              <small class="period">{{ item.period }}</small>
-              <p class="desc">{{ item.description }}</p>
-            </div>
-            <button @click="store.removeExperience(item.id)" class="btn-delete">🗑️</button>
-          </div>
-          <p v-if="store.experiences.length === 0" class="empty-msg">Nenhuma experiência.</p>
-        </div>
-      </section>
-
+      <button class="btn-new" @click="openNewProject">
+        <i class="bi bi-plus-lg"></i> Novo Projeto
+      </button>
     </div>
+
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Carregando projetos...</p>
+    </div>
+
+    <div v-else-if="projects.length > 0" class="projects-grid">
+      <ProjectCard 
+        v-for="project in projects" 
+        :key="project.id" 
+        :project="project"
+        @open="openEditProject(project)"
+      />
+    </div>
+
+    <div v-else class="empty-state">
+      <i class="bi bi-folder-plus"></i>
+      <h3>Comece seu portfólio!</h3>
+      <p>Clique em "Novo Projeto" para adicionar seu primeiro trabalho.</p>
+    </div>
+
+    <ProjectModal
+      :is-open="isModalOpen"
+      :project-to-edit="selectedProject"
+      :is-loading="isActionLoading"
+      @close="isModalOpen = false"
+      @save="handleSave"
+      @delete="handleDelete"
+    />
+
   </div>
 </template>
 
 <style scoped>
-/* --- Layout Principal --- */
+/* --- Layout Container --- */
 .dashboard-container {
+  padding: 120px 2rem 4rem 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  min-height: 100vh;
 }
 
-.header-dash { margin-bottom: 2rem; text-align: center; }
+/* --- Dashboard Header --- */
+.dash-header {
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  padding: 2.5rem 3rem;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  margin-bottom: 3rem; 
+  color: white;
+  flex-wrap: wrap; 
+  gap: 1rem;
+}
 
-.grid-layout {
+.greeting h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+.greeting p { color: rgba(255, 255, 255, 0.9); font-size: 1rem; }
+
+.btn-new {
+  background: white; 
+  color: var(--color-primary); 
+  border: none;
+  padding: 0.9rem 1.8rem; 
+  border-radius: 50px; 
+  font-weight: 700;
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  cursor: pointer; 
+  transition: 0.3s; 
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.btn-new:hover { 
+  background: #f0f7ff; 
+  transform: translateY(-3px); 
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2); 
+}
+
+/* --- Content Display --- */
+.projects-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; 
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 2rem;
 }
 
-/* --- Painéis e Formulários --- */
-.panel {
-  background: var(--color-surface);
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+.loading-state, .empty-state { text-align: center; padding: 4rem; color: #999; }
+
+.spinner { 
+  width: 40px; 
+  height: 40px; 
+  border: 4px solid #eee; 
+  border-top-color: var(--color-primary); 
+  border-radius: 50%; 
+  animation: spin 1s linear infinite; 
+  margin: 0 auto 1rem; 
 }
 
-h2 { 
-  color: var(--color-primary); 
-  border-bottom: 2px solid #f0f0f0; 
-  padding-bottom: 0.5rem; 
-  margin-bottom: 1rem; 
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.form-box {
-  display: flex; flex-direction: column; gap: 10px;
-  margin-bottom: 1.5rem;
-  background: #f9f9f9;
-  padding: 1rem;
-  border-radius: 8px;
-}
+.empty-state i { font-size: 3rem; margin-bottom: 1rem; display: block; opacity: 0.5; }
 
-input {
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.btn-add {
-  padding: 0.8rem;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: 0.2s;
-}
-.btn-add:hover { opacity: 0.9; }
-.btn-secondary { background: var(--color-secondary); }
-
-/* --- Listas e Cards --- */
-.list-items { display: flex; flex-direction: column; gap: 1rem; }
-
-.card-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #eee;
-}
-
-/* Variações de Borda */
-.project-border { border-left: 4px solid var(--color-accent); }
-.exp-border { border-left: 4px solid var(--color-secondary); }
-
-/* Conteúdo do Card */
-.card-content h3 { margin: 0 0 0.3rem 0; font-size: 1.1rem; }
-.institution { font-weight: bold; color: #555; display: block; font-size: 0.9rem; }
-.period { color: #888; font-size: 0.85rem; display: block; margin-bottom: 0.3rem; }
-.desc { font-size: 0.9rem; color: #666; margin: 0; }
-.link-text { font-size: 0.85rem; display: block; margin-top: 0.5rem; }
-.empty-msg { text-align: center; color: #aaa; font-style: italic; }
-
-.btn-delete {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  opacity: 0.5;
-  transition: 0.2s;
-}
-.btn-delete:hover { opacity: 1; transform: scale(1.1); }
-
-/* --- Responsividade --- */
-@media (max-width: 768px) {
-  .grid-layout { grid-template-columns: 1fr; } 
+/* --- Responsive Breakpoints --- */
+@media (max-width: 900px) {
+  .dashboard-container { padding: 100px 1rem 2rem 1rem; }
+  .dash-header { flex-direction: column; align-items: flex-start; padding: 2rem; }
+  .btn-new { margin-top: 1rem; width: 100%; justify-content: center; }
 }
 </style>

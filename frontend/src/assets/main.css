@@ -8,7 +8,7 @@
 
   /* --- Cores Secundárias --- */
   --color-purple-1: #6d32ed;
-  --color-secondary: #8F00FF;
+  --color-secondary: #5f02a6;
   --color-secondary-1: #d6c0e6;
   --color-secondary-2: #b665f3ec;
   --color-highlight: #ff0099d2;
@@ -27,7 +27,7 @@ html, body, #app {
   width: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Evita scroll duplo */
+  overflow: hidden; 
 }
 
 body {

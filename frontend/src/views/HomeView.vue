@@ -1,28 +1,55 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import logoImg from '@/assets/img/img-logo-vet.png'
 
 // Hooks
 const router = useRouter()
+const authStore = useAuthStore()
 
-// Estado
+// State
 const isLogin = ref(true)
 const name = ref('')
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
 
-// Ações
+// Methods
 function toggleAuthMode() { 
-  isLogin.value = !isLogin.value 
+  isLogin.value = !isLogin.value
+  errorMessage.value = ''
 }
 
-function handleAuth() {
-  if (email.value && password.value) {
-    // Simulação de login
+async function handleAuth() {
+  errorMessage.value = ''
+
+  if (!email.value || !password.value) {
+    errorMessage.value = 'Preencha email e senha.'
+    return
+  }
+
+  if (!isLogin.value && !name.value) {
+    errorMessage.value = 'Informe seu nome para cadastrar.'
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    if (isLogin.value) {
+      await authStore.login(email.value, password.value)
+    } else {
+      await authStore.register(name.value, email.value, password.value)
+    }
+
     router.push('/dashboard')
-  } else {
-    alert('Preencha os campos.')
+  } catch (error: any) {
+    console.error(error)
+    errorMessage.value = error.message || 'Erro ao conectar com o servidor.'
+  } finally {
+    isLoading.value = false
   }
 }
 </script>
@@ -40,7 +67,10 @@ function handleAuth() {
     <div class="floating-symbol sym-4">;</div>
 
     <div class="code-snippet snip-1">
-      <pre>const dev = { level: 'Senior', skills: ['Vue'] };</pre>
+      <pre>const dev = { 
+        level: 'Senior', 
+        skills: ['Vue'] 
+      };</pre>
     </div>
     <div class="code-snippet snip-2">
       <pre>git commit -m "Start"</pre>
@@ -66,23 +96,44 @@ function handleAuth() {
             </div>
 
             <form @submit.prevent="handleAuth">
+              
               <div v-if="!isLogin" class="input-group">
                 <label>Nome Completo</label>
-                <input v-model="name" type="text" placeholder="Ex: João Silva" />
+                <input 
+                  v-model="name" 
+                  type="text" 
+                  placeholder="Ex: João Silva" 
+                  :disabled="isLoading"
+                />
               </div>
 
               <div class="input-group">
                 <label>E-mail</label>
-                <input v-model="email" type="email" placeholder="seu@email.com" />
+                <input 
+                  v-model="email" 
+                  type="email" 
+                  placeholder="seu@email.com" 
+                  :disabled="isLoading"
+                />
               </div>
 
               <div class="input-group">
                 <label>Senha</label>
-                <input v-model="password" type="password" placeholder="••••••••" />
+                <input 
+                  v-model="password" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  :disabled="isLoading"
+                />
               </div>
 
-              <button type="submit" class="btn-primary">
-                {{ isLogin ? 'Entrar' : 'Criar Conta' }}
+              <div v-if="errorMessage" class="error-alert">
+                <i class="bi bi-exclamation-circle-fill"></i> {{ errorMessage }}
+              </div>
+
+              <button type="submit" class="btn-primary" :disabled="isLoading">
+                <span v-if="isLoading">Carregando...</span>
+                <span v-else>{{ isLogin ? 'Entrar' : 'Criar Conta' }}</span>
               </button>
             </form>
 
@@ -213,6 +264,12 @@ function handleAuth() {
   transition: all 0.3s ease;
 }
 
+.input-group input:disabled {
+  background-color: #eee;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .input-group::after {
   content: '>';
   position: absolute;
@@ -249,11 +306,34 @@ function handleAuth() {
   cursor: pointer; 
   transition: 0.3s; 
   margin-top: 0.5rem; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary:hover { 
   background-color: var(--color-highlight); 
   transform: translateY(-2px); 
+}
+
+.btn-primary:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-alert {
+  background-color: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 71, 87, 0.2);
 }
 
 .toggle-link { margin-top: 1.5rem; text-align: center; font-size: 0.85rem; color: #666; }
@@ -323,7 +403,6 @@ function handleAuth() {
   will-change: transform;
 }
 
-.code-snippet pre { margin: 0; }
 .snip-1 { top: 10%; right: 5%; transform: rotate(10deg); animation: floatAnimation 25s ease-in-out infinite; }
 .snip-2 { bottom: 25%; left: 5%; transform: rotate(-10deg); animation: floatAnimation 30s ease-in-out infinite reverse; }
 
@@ -349,7 +428,6 @@ function handleAuth() {
   transform: translateX(-20px);
 }
 
-/* --- Responsividade --- */
 @media (max-width: 999px) {
   .home-background { 
     padding: 7rem 2rem; 

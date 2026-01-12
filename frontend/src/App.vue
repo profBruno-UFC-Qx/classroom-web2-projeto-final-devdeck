@@ -1,50 +1,84 @@
 <script setup lang="ts">
-// --- Imports ---
 import { ref, computed } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import logoImg from '@/assets/img/img-logo-header-50px.png'
+
+// Stores & Components
+import { usePortfolioStore } from '@/stores/portfolio'
+import { useAuthStore } from '@/stores/auth' 
 import SearchModal from '@/components/common/SearchModal.vue'
 
-// --- Hooks & Estado ---
+// Assets
+import logoImg from '@/assets/img/img-logo-header-50px.png'
+
+// --- State & Hooks ---
 const route = useRoute()
 const router = useRouter()
+const portfolioStore = usePortfolioStore()
+const authStore = useAuthStore() 
+
 const isSearchOpen = ref(false)
+const tooltipText = ref('Copiar Link') 
 
-// --- Computados ---
-const isDashboard = computed(() => route.path.includes('/dashboard'))
-const isHomePage = computed(() => route.path === '/') 
+// --- Computed Properties ---
+const isPortfolio = computed(() => route.name === 'portfolio')
+const isHomePage = computed(() => route.path === '/')
 
-// --- Métodos ---
+const isLoggedArea = computed(() => {
+  return authStore.isAuthenticated || route.path.includes('/dashboard')
+})
+
+const portfolioLink = computed(() => {
+  const baseUrl = window.location.origin
+  const authUser = authStore.user as any
+  const portfolioUser = portfolioStore.userProfile as any
+  
+  // Resolve User ID priority
+  const userId = authUser?.id || portfolioUser?.id || 1
+  return `${baseUrl}/p/${userId}`
+})
+
+// --- Methods ---
 function handleLogout() {
+  authStore.logout()
   router.push('/')
+}
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(portfolioLink.value)
+    tooltipText.value = 'Copiado!'
+    setTimeout(() => { tooltipText.value = 'Copiar Link' }, 2000)
+  } catch (err) {
+    console.error('Clipboard error:', err)
+  }
 }
 </script>
 
 <template>
   <SearchModal v-if="isSearchOpen" @close="isSearchOpen = false" />
 
-  <header>
+  <header v-if="!isPortfolio" :class="{ 'header-transparent': isLoggedArea }">
     <div class="wrapper">
       
       <RouterLink to="/" class="logo-link">
         <img :src="logoImg" alt="Logo DevDeck" class="logo-img" />
       </RouterLink>
 
-      <div v-if="!isDashboard" class="search-trigger" @click="isSearchOpen = true">
+      <div v-if="!isLoggedArea" class="search-trigger" @click="isSearchOpen = true">
         <i class="bi bi-search"></i>
         <span>Pesquisar currículo...</span>
       </div>
 
       <nav>
-        <template v-if="!isDashboard">
+        <template v-if="!isLoggedArea">
           <RouterLink to="/" class="nav-item">
             <i class="bi bi-house-door"></i>
             <span>Home</span>
           </RouterLink>
 
           <RouterLink to="/sobre" class="nav-item">
-            <i class="bi bi-people"></i>
-            <span>Sobre Nós</span>
+            <i class="bi bi-card-heading"></i>
+            <span>Sobre</span>
           </RouterLink>
         </template>
 
@@ -54,9 +88,25 @@ function handleLogout() {
             <span>Dashboard</span>
           </RouterLink>
 
+          <RouterLink to="/curriculo" class="nav-item">
+            <i class="bi bi-person-lines-fill"></i>
+            <span>Currículo</span>
+          </RouterLink>
+
           <div class="separator"></div>
 
-          <span class="user-label">Olá, Dev</span>
+          <div class="split-btn-container">
+            <a :href="portfolioLink" target="_blank" class="split-main">
+              <i class="bi bi-eye-fill"></i>
+              <span>Ver Portfólio</span>
+            </a>
+            <button class="split-copy" @click="copyLink">
+              <i class="bi bi-copy"></i>
+              <span class="tooltip">{{ tooltipText }}</span>
+            </button>
+          </div>
+
+          <span class="user-label">Olá, {{ authStore.user?.name?.split(' ')[0] || 'Dev' }}</span>
           <button @click="handleLogout" class="btn-logout">Sair</button>
         </template>
       </nav>
@@ -74,7 +124,7 @@ function handleLogout() {
 </template>
 
 <style scoped>
-/* --- Layout Global --- */
+/* --- Global App Layout --- */
 :global(#app) {
   display: flex;
   flex-direction: column;
@@ -88,10 +138,10 @@ main {
   scroll-behavior: smooth;
 }
 
-/* --- Header & Wrapper --- */
+/* --- Header & Navigation --- */
 header {
-  background-color: rgb(255, 255, 255);
-  backdrop-filter: blur(10px); 
+  background-color: rgb(255, 255, 255); 
+  backdrop-filter: blur(5px); 
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   height: 70px;
   display: flex;
@@ -103,9 +153,14 @@ header {
   transform: translateX(-50%); 
   width: 90%; 
   max-width: 1200px; 
-  border-radius: 50px; 
+  border-radius: 20px; 
   z-index: 1000;
   padding: 0 15px; 
+  transition: background-color 0.3s ease;
+}
+
+.header-transparent {
+  background-color: rgba(255, 255, 255, 0.678); 
 }
 
 .wrapper {
@@ -123,7 +178,6 @@ header {
   display: block;
 }
 
-/* --- Barra de Pesquisa --- */
 .search-trigger {
   flex: 1;
   max-width: 200px;
@@ -154,7 +208,6 @@ header {
   text-overflow: ellipsis;
 }
 
-/* --- Navegação & Links --- */
 nav {
   display: flex;
   gap: 1rem;
@@ -163,45 +216,125 @@ nav {
   margin-left: auto; 
 }
 
+/* --- Nav Items & Active States --- */
 .nav-item {
   text-decoration: none;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 5px 24px;
-  border-radius: 50px;
-  border: 2px solid transparent;
-  background-image: linear-gradient(white, white), linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
+  border-radius: 12px;
+  position: relative; 
+  z-index: 1;
+  background-color: transparent; 
+  backdrop-filter: blur(1px); 
+  border: none; 
   color: var(--color-primary);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   transition: all 0.3s ease;
   white-space: nowrap;
+  gap: 8px; 
 }
 
-.nav-item i {
-  display: none; 
-  font-size: 1.3rem;
+.nav-item::before {
+  content: "";
+  position: absolute;
+  inset: 0; 
+  border-radius: 12px; 
+  padding: 2px; 
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none; 
+  transition: opacity 0.3s ease;
 }
 
-.nav-item:hover {
+.nav-item:hover, .nav-item.router-link-active {
   background: linear-gradient(90deg, var(--color-primary-1) 0%, var(--color-secondary-2) 100%);
-  border-color: var(--color-secondary);
   color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.173);
 }
 
-.nav-item.router-link-active {
-  border: 2px solid transparent;
-  background-image: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  background-origin: border-box;
-  background-clip: border-box;
-  color: white;
-  box-shadow: 0 4px 10px rgba(143, 0, 255, 0.3);
+.nav-item:hover::before, .nav-item.router-link-active::before {
+  opacity: 0; 
 }
 
-/* --- Elementos de Usuário --- */
+/* --- Split Button Actions --- */
+.split-btn-container {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  z-index: 1;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  border-radius: 12px;
+  overflow: hidden;
+  height: 36px;
+  transition: 0.3s;
+}
+
+.split-btn-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 2px;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); 
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.split-btn-container:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.split-main {
+  display: flex; align-items: center; gap: 6px; padding: 0 16px;
+  background: transparent; color: var(--color-primary);
+  text-decoration: none; font-size: 0.8rem; font-weight: 700;
+  transition: 0.2s; cursor: pointer;
+}
+
+.split-copy {
+  border: none;
+  border-left: 1px solid rgba(143, 0, 255, 0.3); 
+  background: transparent; color: var(--color-primary);
+  padding: 0 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; transition: 0.2s;
+}
+
+/* --- Tooltip UI --- */
+.tooltip {
+  position: absolute;
+  top: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s;
+  z-index: 10;
+}
+
+.split-copy:hover .tooltip {
+  opacity: 1;
+  top: 120%;
+}
+
+/* --- User Info & Logout --- */
 .separator {
   width: 1px;
   height: 25px;
@@ -224,7 +357,6 @@ nav {
   cursor: pointer;
   font-weight: 600;
   transition: 0.3s;
-  font-family: inherit;
   font-size: 0.85rem;
 }
 
@@ -233,37 +365,15 @@ nav {
   color: white;
 }
 
-/* --- Responsividade (Mobile) --- */
+/* --- Responsive Adjustments --- */
 @media (max-width: 999px) {
-  .search-trigger {
-    max-width: 100px;
-    max-height: 2;
-    padding: 0;
-    justify-content: center;
-  }
-  
-  .search-trigger span { display: none; }
-  
-  .nav-item {
-    padding: 2px;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-  }
-  
-  .nav-item span { display: none; }
-  .nav-item i { display: block; }
-  .user-label { display: none; }
+  .search-trigger { max-width: 100px; padding: 0; justify-content: center; }
+  .search-trigger span, .nav-item span, .user-label, .split-main span { display: none; }
+  .nav-item, .split-btn-container { height: 45px; width: 45px; border-radius: 12px; }
+  .split-main { padding: 0 12px; }
 }
 
-/* --- Transições (Vue Transition) --- */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+/* --- Transitions --- */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

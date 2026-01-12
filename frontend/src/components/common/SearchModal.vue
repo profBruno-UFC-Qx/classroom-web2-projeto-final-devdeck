@@ -1,81 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { usePortfolioStore } from '@/stores/portfolio'
 
-// Define os eventos que esse componente pode emitir (para fechar)
-const emit = defineEmits(['close'])
-const router = useRouter()
-const store = usePortfolioStore()
-
-const searchInput = ref<HTMLInputElement | null>(null)
-const term = ref('')
-
-// Foca no input assim que o modal abre
-onMounted(() => {
-  nextTick(() => {
-    searchInput.value?.focus()
-  })
-})
-
-// Filtra os usuários da Store
-const results = computed(() => {
-  if (!term.value) return []
-  return store.publicUsers.filter(u => 
-    u.name.toLowerCase().includes(term.value.toLowerCase()) || 
-    u.role.toLowerCase().includes(term.value.toLowerCase())
-  )
-})
-
-function goToProfile(username: string) {
-  router.push(`/p/${username}`)
-  emit('close') // Fecha o modal ao clicar
-}
 </script>
 
 <template>
-  <div class="modal-overlay" @click="$emit('close')">
-    
-    <div class="modal-card" @click.stop>
-      
-      <div class="search-header">
-        <i class="bi bi-search icon-search"></i>
-        <input 
-          ref="searchInput"
-          v-model="term" 
-          type="text" 
-          placeholder=" Busque por nome, cargo ou stack..." 
-          @keydown.esc="$emit('close')"
-        />
-        <button class="btn-close" @click="$emit('close')">ESC</button>
-      </div>
-
-      <div class="search-results" v-if="term">
-        <p v-if="results.length === 0" class="no-results">
-          Nenhum desenvolvedor encontrado.
-        </p>
-
-        <div 
-          v-for="user in results" 
-          :key="user.username" 
-          class="result-item"
-          @click="goToProfile(user.username)"
-        >
-          <img :src="user.avatar" class="avatar-mini" />
-          <div class="info">
-            <span class="name">{{ user.name }}</span>
-            <span class="role">{{ user.role }}</span>
-          </div>
-          <i class="bi bi-chevron-right arrow"></i>
-        </div>
-      </div>
-
-      <div class="search-footer" v-else>
-        <p>Digite para pesquisar talentos...</p>
-      </div>
-
-    </div>
-  </div>
+  
 </template>
 
 <style scoped>
