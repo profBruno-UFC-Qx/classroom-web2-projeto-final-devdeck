@@ -10,10 +10,21 @@ type UpdateRequest = {
   linkRepo?: string;
   linkDeploy?: string;
   images?: string[]; 
+  tags?: string[]; 
 };
 
 export class UpdateProjectService {
-  async execute({ id, userId, userRole, title, description, linkRepo, linkDeploy, images }: UpdateRequest) {
+  async execute({ 
+    id, 
+    userId, 
+    userRole, 
+    title, 
+    description, 
+    linkRepo, 
+    linkDeploy, 
+    images,
+    tags 
+  }: UpdateRequest) {
     const repo = AppDataSource.getRepository(Project);
     const project = await repo.findOne({ where: { id: Number(id) } });
 
@@ -27,9 +38,8 @@ export class UpdateProjectService {
     project.description = description ?? project.description;
     project.linkRepo = linkRepo ?? project.linkRepo;
     project.linkDeploy = linkDeploy ?? project.linkDeploy;
-    
-    // Atualiza a lista de imagens se vier nova
     project.images = images ?? project.images;
+    project.tags = tags ?? project.tags; 
 
     await repo.save(project);
     return project;

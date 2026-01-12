@@ -12,6 +12,8 @@ import { UpdateProjectController } from "./controllers/UpdateProjectController";
 import { GetProfileController } from "./controllers/GetProfileController";
 import { UploadController } from "./controllers/UploadController";
 import { UpdateProfileController } from "./controllers/UpdateProfileController";
+import { DeleteUserController } from "./controllers/DeleteUserController";
+import { UpdatePasswordController } from "./controllers/UpdatePasswordController";
 
 const routes = Router();
 
@@ -25,12 +27,18 @@ const updateProjectController = new UpdateProjectController();
 const getProfileController = new GetProfileController();
 const uploadController = new UploadController(); 
 const updateProfileController = new UpdateProfileController();
+const deleteUserController = new DeleteUserController();
+const updatePasswordController = new UpdatePasswordController();
 
 // --- Rotas de Usuário ---
 routes.post("/users", createUserController.handle);
 routes.post("/login", authController.handle);
 
-// Exemplo de rota inline tipada
+// Rotas de Gestão de Conta 
+routes.delete("/users/me", authMiddleware, deleteUserController.handle);
+routes.put("/users/password", authMiddleware, updatePasswordController.handle);
+
+// Rota de verificação de token 
 routes.get("/users/me", authMiddleware, (req, res) => {
   return res.json({ 
     message: "Você está logado!", 

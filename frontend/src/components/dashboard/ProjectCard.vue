@@ -5,7 +5,6 @@ defineProps<{
   project: Project
 }>()
 
-// Emite evento quando clicado
 defineEmits(['open'])
 </script>
 
@@ -14,49 +13,58 @@ defineEmits(['open'])
     
     <div class="image-wrapper">
       <img 
-        :src="(project.images && project.images.length > 0) ? project.images[0] : 'https://via.placeholder.com/400x250?text=Sem+Capa'" 
+        :src="(project.images && project.images.length > 0) ? project.images[0] : 'https://via.placeholder.com/400x250/333/fff?text=DevDeck'" 
         alt="Capa do Projeto" 
         class="project-img"
       />
-      
-      <div class="overlay">
-        <div class="gear-icon">
-          <i class="bi bi-gear-fill"></i>
-        </div>
-        <span>Gerenciar</span>
-      </div>
     </div>
 
     <div class="card-footer">
       <h3>{{ project.title }}</h3>
     </div>
+
+    <div class="overlay">
+      <div class="gear-icon">
+        <i class="bi bi-gear-fill"></i>
+      </div>
+      <span>Gerenciar</span>
+    </div>
+
   </div>
 </template>
 
 <style scoped>
 .card-container {
-  background: white;
+  /* --- ESTILO BASE --- */
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  border: none; 
   border-radius: 16px;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
   overflow: hidden;
+  
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   transition: all 0.3s ease;
-  position: relative;
+  
   display: flex;
   flex-direction: column;
-  height: 280px; /* Altura fixa para uniformidade */
+  height: 340px; 
+  position: relative; 
 }
 
 .card-container:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.25);
 }
 
-/* --- Imagem --- */
+/* --- Imagem Wrapper --- */
 .image-wrapper {
-  flex: 1;
+  flex: 1; 
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .project-img {
@@ -64,18 +72,44 @@ defineEmits(['open'])
   height: 100%;
   object-fit: cover;
   transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
 }
 
 .card-container:hover .project-img {
-  transform: scale(1.15); /* Zoom in */
+  transform: scale(1.1);
 }
 
-/* --- Overlay e Blur --- */
+/* --- Footer --- */
+.card-footer {
+  padding: 1.2rem;
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.card-footer h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: white;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Overlay --- */
 .overlay {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px); /* O Blur mágico */
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%;
+  
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px); 
+  
   opacity: 0;
   display: flex;
   flex-direction: column;
@@ -83,6 +117,8 @@ defineEmits(['open'])
   justify-content: center;
   color: white;
   transition: opacity 0.3s ease;
+  
+  z-index: 10; 
 }
 
 .card-container:hover .overlay {
@@ -92,30 +128,18 @@ defineEmits(['open'])
 .gear-icon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
-  animation: spin 4s linear infinite; /* Roda devagar */
+  color: #ffffff;
+  animation: spin 4s linear infinite; 
+}
+
+.overlay span {
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
 }
 
 @keyframes spin { 
   from { transform: rotate(0deg); } 
   to { transform: rotate(360deg); } 
-}
-
-/* --- Footer --- */
-.card-footer {
-  padding: 1.2rem;
-  background: white;
-  border-top: 1px solid #f0f0f0;
-  text-align: center;
-  z-index: 2;
-}
-
-.card-footer h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #333;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 </style>

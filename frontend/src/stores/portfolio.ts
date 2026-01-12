@@ -10,7 +10,7 @@ export interface Project {
   shortDescription: string
   detailedDescription: string
   images: string[] 
-  tags: string[]
+  tags: string[] 
   linkRepo?: string
   linkDeploy?: string
 }
@@ -66,6 +66,8 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   })
 
   // --- Project Actions ---
+  
+  // BUSCAR PROJETOS 
   async function fetchProjects() {
     isLoading.value = true
     try {
@@ -79,10 +81,10 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       projects.value = data.data.map((p: any) => ({
         id: p.id,
         title: p.title,
-        shortDescription: p.description,
-        detailedDescription: p.description,
+        shortDescription: p.description, 
+        detailedDescription: p.detailedDescription || p.description, 
         images: p.images || [], 
-        tags: [], 
+        tags: Array.isArray(p.tags) ? p.tags : [],
         linkRepo: p.linkRepo,
         linkDeploy: p.linkDeploy
       }))
@@ -93,24 +95,28 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
+  // CRIAR PROJETO 
   async function createNewProject(newProjectData: Partial<Project>) {
     try {
-      const response = await api.post('/projects', {
+      const payload = {
         title: newProjectData.title || 'Novo Projeto',
         description: newProjectData.shortDescription || 'Sem descrição',
+        detailedDescription: newProjectData.detailedDescription || '',
         linkRepo: newProjectData.linkRepo || '',
         linkDeploy: newProjectData.linkDeploy || '',
-        images: newProjectData.images || [] 
-      })
+        images: newProjectData.images || [],
+        tags: newProjectData.tags || [] 
+      }
 
+      const response = await api.post('/projects', payload)
       const created = response.data
       const frontendProject: Project = {
         id: created.id,
         title: created.title,
         shortDescription: created.description,
-        detailedDescription: created.description,
+        detailedDescription: created.detailedDescription || created.description,
         images: created.images || [],
-        tags: ['Novo'],
+        tags: created.tags || payload.tags, 
         linkRepo: created.linkRepo,
         linkDeploy: created.linkDeploy
       }
@@ -129,25 +135,33 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       projects.value = projects.value.filter(p => p.id !== id)
     } catch (error: any) {
       const message = error.response?.status === 403 ? 'Sem permissão.' : 'Erro ao deletar.'
-      alert(message)
+      throw new Error(message)
     }
   }
 
+  // ATUALIZAR PROJETO
   async function updateProject(project: Partial<Project>) {
     if (!project.id) return
 
     try {
-      await api.put(`/projects/${project.id}`, {
+      const payload = {
         title: project.title,
-        description: project.detailedDescription || project.shortDescription,
+        description: project.shortDescription,
+        detailedDescription: project.detailedDescription,
         linkRepo: project.linkRepo,
         linkDeploy: project.linkDeploy,
-        images: project.images || []
-      })
+        images: project.images || [],
+        tags: project.tags || [] 
+      }
 
+      await api.put(`/projects/${project.id}`, payload)
       const index = projects.value.findIndex(p => p.id === project.id)
       if (index !== -1) {
-        projects.value[index] = { ...projects.value[index], ...project } as Project
+        projects.value[index] = { 
+          ...projects.value[index], 
+          ...project,             
+          tags: payload.tags        
+        } as Project
       }
       return true
     } catch (error: any) {
@@ -179,7 +193,10 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   }
 
   async function updateUserProfile(newProfile: UserProfile) {
+    // Clone para remover referências reativas antes de enviar
     const cleanData = JSON.parse(JSON.stringify(newProfile))
+    
+    // Atualiza localmente
     userProfile.value = { ...newProfile }
 
     try {
@@ -187,6 +204,20 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     } catch (error: any) {
       console.error('Update profile error:', error.response?.data || error.message)
       throw new Error('Falha ao salvar no servidor')
+    }
+  }
+
+  async function updateAvatar(url: string) {
+    try {
+      if (authStore.user) {
+        authStore.user.avatar = url
+      }
+      userProfile.value.avatarUrl = url
+      await api.put('/users/profile', { avatarUrl: url })
+      return true
+    } catch (error) {
+      console.error('Erro ao salvar avatar:', error)
+      throw error
     }
   }
 
@@ -224,6 +255,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     updateProject, 
     fetchUserProfile,
     updateUserProfile,
+    updateAvatar, 
     addSkill,
     removeSkill
   }

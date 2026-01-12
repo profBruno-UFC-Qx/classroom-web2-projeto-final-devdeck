@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-// Importe o layout criado. Ajuste o caminho se salvou em outra pasta.
-import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue' 
+import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+ 
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -20,14 +20,35 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         {
-          path: 'dashboard', 
+          path: 'dashboard',
           name: 'dashboard',
-          component: () => import('../views/DashboardView.vue')
+          component: () => import('../views/DashboardView.vue'),
+          meta: { 
+            title: 'Dashboard', 
+            desc: 'Visão geral dos seus projetos.' 
+          }
         },
         {
-          path: 'curriculo', 
+          path: 'curriculo',
           name: 'profile',
-          component: () => import('../views/ProfileView.vue')
+          component: () => import('../views/ProfileView.vue'),
+          meta: { 
+            title: 'Meu Currículo', 
+            desc: 'Gerencie suas informações pessoais, habilidades e experiências.' 
+          }
+        },
+        {
+          path: 'conta',
+          name: 'account',
+          component: () => import('../views/AccountView.vue'), 
+          meta: { title: 'Minha Conta', desc: 'Gerencie seus dados de acesso e plano.' }
+        },
+        //Essa rota não vai ter
+        {
+          path: 'configuracoes',
+          name: 'settings',
+          component: () => import('../views/DashboardView.vue'), 
+          meta: { title: 'Configurações', desc: 'Personalize sua experiência no DevDeck.' }
         }
       ]
     },

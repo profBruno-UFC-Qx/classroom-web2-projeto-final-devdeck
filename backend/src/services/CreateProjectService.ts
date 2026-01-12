@@ -6,12 +6,21 @@ interface ProjectRequest {
   description: string;
   linkRepo: string;
   linkDeploy: string;
-  images: string[]; 
+  images: string[];
+  tags: string[];
   userId: number;
 }
 
 export class CreateProjectService {
-  async execute({ title, description, linkRepo, linkDeploy, images, userId }: ProjectRequest) {
+  async execute({ 
+    title, 
+    description, 
+    linkRepo, 
+    linkDeploy, 
+    images, 
+    tags, 
+    userId 
+  }: ProjectRequest) {
     const repo = AppDataSource.getRepository(Project);
 
     const project = repo.create({
@@ -19,7 +28,8 @@ export class CreateProjectService {
       description,
       linkRepo,
       linkDeploy,
-      images, 
+      images,
+      tags: tags || [], 
       user_id: userId
     });
 

@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePortfolioStore, type Project } from '@/stores/portfolio'
+import { useToastStore } from '@/stores/toast' 
 
 // Components
 import ProjectCard from '@/components/dashboard/ProjectCard.vue'
@@ -9,6 +10,7 @@ import ProjectModal from '@/components/dashboard/ProjectModal.vue'
 
 // --- Setup & State ---
 const store = usePortfolioStore()
+const toast = useToastStore() 
 const { projects, isLoading } = storeToRefs(store)
 
 const isModalOpen = ref(false)
@@ -36,13 +38,18 @@ async function handleSave(projectData: Partial<Project>) {
   isActionLoading.value = true
   try {
     if (selectedProject.value) {
+      // Edição
       await store.updateProject({ ...projectData, id: selectedProject.value.id })
+      toast.success('Projeto atualizado com sucesso!') 
     } else {
+      // Criação
       await store.createNewProject(projectData)
+      toast.success('Novo projeto criado!')
     }
     isModalOpen.value = false
   } catch (error: any) {
-    alert(error.message)
+    // Feedback Erro
+    toast.error(error.message || 'Erro ao salvar projeto.') 
   } finally {
     isActionLoading.value = false
   }
@@ -52,9 +59,14 @@ async function handleDelete(id: number) {
   isActionLoading.value = true
   try {
     await store.removeProject(id)
+    
+    // Feedback Sucesso na Exclusão
+    toast.success('Projeto removido com sucesso.') 
+    
     isModalOpen.value = false
   } catch (error) {
-    alert('Erro ao deletar o projeto.')
+    // Feedback Erro
+    toast.error('Não foi possível excluir o projeto.')
   } finally {
     isActionLoading.value = false
   }
@@ -62,16 +74,12 @@ async function handleDelete(id: number) {
 </script>
 
 <template>
-  <div class="dashboard-container">
+  <div class="view-content">
     
-    <div class="dash-header">
-      <div class="greeting">
-        <h1>Meus Projetos</h1>
-        <p>Gerencie seu portfólio e mostre seu melhor trabalho.</p>
-      </div>
-      
-      <button class="btn-new" @click="openNewProject">
-        <i class="bi bi-plus-lg"></i> Novo Projeto
+    <div class="toolbar">
+      <button class="btn-action-white" @click="openNewProject">
+        <i class="bi bi-plus-lg"></i> 
+        <span>Novo Projeto</span>
       </button>
     </div>
 
@@ -90,9 +98,11 @@ async function handleDelete(id: number) {
     </div>
 
     <div v-else class="empty-state">
-      <i class="bi bi-folder-plus"></i>
+      <div class="empty-icon">
+        <i class="bi bi-folder-plus"></i>
+      </div>
       <h3>Comece seu portfólio!</h3>
-      <p>Clique em "Novo Projeto" para adicionar seu primeiro trabalho.</p>
+      <p>Clique em "Novo Projeto" acima para adicionar seu primeiro trabalho.</p>
     </div>
 
     <ProjectModal
@@ -108,81 +118,115 @@ async function handleDelete(id: number) {
 </template>
 
 <style scoped>
-/* --- Layout Container --- */
-.dashboard-container {
-  padding: 120px 2rem 4rem 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  min-height: 100vh;
+/* --- View Wrapper --- */
+.view-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* --- Dashboard Header --- */
-.dash-header {
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  padding: 2.5rem 3rem;
-  border-radius: 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
-  display: flex; 
-  justify-content: space-between; 
+/* --- Toolbar --- */
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 2rem;
   align-items: center;
-  margin-bottom: 3rem; 
-  color: white;
-  flex-wrap: wrap; 
-  gap: 1rem;
 }
 
-.greeting h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
-.greeting p { color: rgba(255, 255, 255, 0.9); font-size: 1rem; }
-
-.btn-new {
-  background: white; 
+/* --- Botão Novo Design --- */
+.btn-action-white {
+  background: #ffffff; 
   color: var(--color-primary); 
   border: none;
-  padding: 0.9rem 1.8rem; 
+  padding: 0.7rem 1.5rem; 
   border-radius: 50px; 
   font-weight: 700;
+  font-size: 0.95rem;
   display: flex; 
   align-items: center; 
   gap: 10px; 
   cursor: pointer; 
-  transition: 0.3s; 
-  white-space: nowrap;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
 }
 
-.btn-new:hover { 
-  background: #f0f7ff; 
-  transform: translateY(-3px); 
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2); 
-}
+.btn-action-white i { font-size: 1.1rem; font-weight: bold; }
+.btn-action-white:hover { transform: scale(1.05); }
+.btn-action-white:active { transform: scale(0.95); }
 
-/* --- Content Display --- */
+/* --- Grid --- */
 .projects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  gap: 1.5rem;
+  width: 100%;
 }
 
-.loading-state, .empty-state { text-align: center; padding: 4rem; color: #999; }
-
+/* --- Loading --- */
+.loading-state { text-align: center; padding: 4rem; color: rgba(255,255,255,0.7); }
 .spinner { 
-  width: 40px; 
-  height: 40px; 
-  border: 4px solid #eee; 
+  width: 40px; height: 40px; 
+  border: 4px solid rgba(255,255,255,0.1); 
   border-top-color: var(--color-primary); 
   border-radius: 50%; 
   animation: spin 1s linear infinite; 
   margin: 0 auto 1rem; 
 }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.empty-state i { font-size: 3rem; margin-bottom: 1rem; display: block; opacity: 0.5; }
+/* --- Empty State  --- */
+.empty-state { 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  
+  /* Layout e Espaçamento */
+  width: auto;
+  margin: 0 1rem; 
+  box-sizing: border-box; 
+  
+  /* Visual Glass */
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  
+  transition: all 0.3s ease;
+}
 
-/* --- Responsive Breakpoints --- */
-@media (max-width: 900px) {
-  .dashboard-container { padding: 100px 1rem 2rem 1rem; }
-  .dash-header { flex-direction: column; align-items: flex-start; padding: 2rem; }
-  .btn-new { margin-top: 1rem; width: 100%; justify-content: center; }
+.empty-state:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.empty-icon {
+  font-size: 4rem; 
+  margin-bottom: 1.5rem;
+  color: #ffffff; 
+  opacity: 0.9;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.empty-state h3 { 
+  font-size: 1.8rem; 
+  margin-bottom: 0.5rem; 
+  color: white; 
+  font-weight: 700;
+  text-align: center;
+}
+
+.empty-state p { 
+  font-size: 1.1rem; 
+  opacity: 0.8; 
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+  .btn-action-white { width: 100%; justify-content: center; }
+  .projects-grid { grid-template-columns: 1fr; }
+  .empty-state { margin: 0; }
 }
 </style>

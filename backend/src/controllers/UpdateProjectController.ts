@@ -4,10 +4,13 @@ import { UpdateProjectService } from "../services/UpdateProjectService";
 export class UpdateProjectController {
   async handle(req: Request, res: Response) {
     const { id } = req.params;
-    const { title, description, linkRepo, linkDeploy, images } = req.body;
+    const { title, description, linkRepo, linkDeploy, images, tags } = req.body;
+    
     const userId = (req as any).userId;
     const userRole = (req as any).userRole;
+    
     const service = new UpdateProjectService();
+    
     const result = await service.execute({
       id,
       userId,
@@ -16,7 +19,8 @@ export class UpdateProjectController {
       description,
       linkRepo,
       linkDeploy,
-      images 
+      images,
+      tags 
     });
 
     if (result instanceof Error) {

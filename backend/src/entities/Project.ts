@@ -13,6 +13,9 @@ export class Project {
   description!: string;
 
   @Column("simple-array", { nullable: true })
+  tags!: string[]; 
+
+  @Column("simple-array", { nullable: true })
   images!: string[]; 
 
   @Column({ nullable: true })
@@ -27,7 +30,7 @@ export class Project {
   @Column()
   user_id!: number;
 
-  @ManyToOne(() => User, user => user.projects)
+  @ManyToOne(() => User, user => user.projects, { onDelete: "CASCADE" })
   @JoinColumn({ name: "user_id" })
   user!: User;
 }
