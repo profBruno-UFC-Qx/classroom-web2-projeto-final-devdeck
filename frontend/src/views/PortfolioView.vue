@@ -31,53 +31,50 @@ const route = useRoute()
 const isLoading = ref(true)
 const error = ref(false)
 
+// Estado inicial vazio
 const userProfile = ref<UserProfile>({
-  name: '',
-  role: '',
-  location: '',
-  bio: '',
-  avatarUrl: '',
-  social: {},
-  skills: [],
-  experiences: [],
-  education: []
+  name: '', role: '', location: '', bio: '', avatarUrl: '',
+  social: {}, skills: [], experiences: [], education: []
 })
-
 const projects = ref<Project[]>([])
 
-// --- Lifecycle & Data Fetching ---
+// --- Lógica de Busca (Pública) ---
 onMounted(async () => {
-  const userId = route.params.username 
+  const userId = route.params.id 
+
+  if (!userId) {
+    error.value = true
+    isLoading.value = false
+    return
+  }
 
   try {
-    const { data } = await api.get(`/users/public/${userId}`)
+    const { data } = await api.get(`/users/${userId}/portfolio`)
 
-    // Projects Mapping
-    projects.value = data.projects.map((p: any) => ({
+    // Preenche os Projetos
+    projects.value = (data.projects || []).map((p: any) => ({
       id: p.id,
       title: p.title,
       shortDescription: p.description,
-      imageUrl: (p.images && p.images.length > 0) 
-        ? p.images[0] 
-        : 'https://via.placeholder.com/400x200?text=Projeto',
+      imageUrl: (p.images && p.images.length > 0) ? p.images[0] : 'https://placehold.co/600x400/1e293b/FFF?text=Projeto',
       linkRepo: p.linkRepo,
       linkDeploy: p.linkDeploy
     }))
 
-    // Profile Mapping
+    // Preenche o Perfil
     userProfile.value = {
       name: data.name,
-      role: data.role || 'Desenvolvedor Fullstack',
-      location: data.location || 'Brasil',
-      bio: data.bio || `Olá! Sou ${data.name} e este é meu portfólio desenvolvido com DevDeck.`,
-      avatarUrl: data.avatarUrl || `https://ui-avatars.com/api/?name=${data.name}&background=8456b5&color=fff&size=256`,
+      role: data.role || 'Desenvolvedor',
+      location: data.location || '',
+      bio: data.bio || `Olá! Sou ${data.name}.`,
+      avatarUrl: data.avatarUrl || `https://ui-avatars.com/api/?name=${data.name}&background=6366f1&color=fff&size=256&bold=true`,
       social: data.social || {},
       skills: data.skills || [], 
       experiences: data.experiences || [],
       education: data.education || []
     }
   } catch (err) {
-    console.error('Fetch error:', err)
+    console.error('Erro ao carregar portfólio:', err)
     error.value = true
   } finally {
     isLoading.value = false

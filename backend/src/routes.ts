@@ -14,6 +14,8 @@ import { UploadController } from "./controllers/UploadController";
 import { UpdateProfileController } from "./controllers/UpdateProfileController";
 import { DeleteUserController } from "./controllers/DeleteUserController";
 import { UpdatePasswordController } from "./controllers/UpdatePasswordController";
+// --- NOVO CONTROLLER ---
+import { GetPublicPortfolioController } from "./controllers/GetPublicPortfolioController";
 
 const routes = Router();
 
@@ -29,6 +31,8 @@ const uploadController = new UploadController();
 const updateProfileController = new UpdateProfileController();
 const deleteUserController = new DeleteUserController();
 const updatePasswordController = new UpdatePasswordController();
+// --- NOVA INSTÂNCIA ---
+const getPublicPortfolioController = new GetPublicPortfolioController();
 
 // --- Rotas de Usuário ---
 routes.post("/users", createUserController.handle);
@@ -47,8 +51,9 @@ routes.get("/users/me", authMiddleware, (req, res) => {
   });
 });
 
-// --- Rota Pública de Perfil ---
-routes.get("/users/public/:id", getProfileController.handle);
+// --- Rota Pública de Perfil (AJUSTADA) ---
+// Antes estava /users/public/:id, mudei para bater com o frontend
+routes.get("/users/:id/portfolio", getPublicPortfolioController.handle);
 
 // --- Rotas de Projetos ---
 routes.post("/projects", authMiddleware, createProjectController.handle);

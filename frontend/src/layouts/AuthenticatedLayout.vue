@@ -1,54 +1,58 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { RouterView, RouterLink, useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { usePortfolioStore } from '@/stores/portfolio'
 import { useToastStore } from '@/stores/toast'
 import { api } from '@/services/api' 
 import logoImg from '@/assets/img/img-logo-header-50px.png' 
 
-// --- Store & Router ---
 const authStore = useAuthStore()
 const portfolioStore = usePortfolioStore()
 const toast = useToastStore()
 const router = useRouter()
 const route = useRoute()
 
-// --- State ---
-const copyButtonText = ref('Copiar')
-const copyIcon = ref('bi-clipboard')
+const { userProfile } = storeToRefs(portfolioStore)
+
 const fileInput = ref<HTMLInputElement | null>(null) 
 const isUploading = ref(false)
+const copyButtonText = ref('Copiar')
+const copyIcon = ref('bi-clipboard')
 
-// --- Lifecycle ---
-onMounted(async () => {
-  await portfolioStore.fetchUserProfile()
-
-  if (authStore.user && portfolioStore.userProfile.avatarUrl) {
-    authStore.user.avatar = portfolioStore.userProfile.avatarUrl
-    authStore.user.name = portfolioStore.userProfile.name 
-  }
-})
-
-// --- Computed Data ---
+// --- Computed Properties ---
 const pageTitle = computed(() => (route.meta.title as string) || 'DevDeck')
 const pageDesc = computed(() => (route.meta.desc as string) || '')
 
 const userName = computed(() => {
-  const name = authStore.user?.name || 'Dev'
+  const name = userProfile.value?.name || authStore.user?.name || 'Dev'
   return name.split(' ')[0] 
 })
 
 const userAvatar = computed(() => {
-  return authStore.user?.avatar || `https://ui-avatars.com/api/?name=${userName.value}&background=8456b5&color=fff&bold=true`
+  if (userProfile.value?.avatarUrl) return userProfile.value.avatarUrl
+  if (authStore.user?.avatar) return authStore.user.avatar
+  return `https://ui-avatars.com/api/?name=${userName.value}&background=8456b5&color=fff&bold=true`
 })
 
 const portfolioPath = computed(() => {
-  const userId = authStore.user?.id || 1
-  return `/p/${userId}` 
+  const id = (userProfile.value as any)?.id || authStore.user?.id
+  if (!id) return '#'
+  return `/portfolio/${id}` 
 })
 
-// --- Actions ---
+// --- Lifecycle ---
+onMounted(async () => {
+  try {
+    if (!userProfile.value.name || userProfile.value.name === 'Dev') {
+      await portfolioStore.fetchUserProfile()
+    }
+  } catch (e) {
+    console.error(e)
+  }
+})
+
 function handleLogout() {
   authStore.logout()
   router.push('/')
@@ -60,15 +64,13 @@ async function copyLink() {
     await navigator.clipboard.writeText(fullUrl)
     copyButtonText.value = 'Copiado!'
     copyIcon.value = 'bi-check-lg'
-    toast.success('Link copiado para a área de transferência!')
+    toast.success('Link copiado!')
     setTimeout(() => { copyButtonText.value = 'Copiar'; copyIcon.value = 'bi-clipboard' }, 2000)
   } catch (err) { 
-    console.error('Erro ao copiar', err)
-    toast.error('Não foi possível copiar o link.')
+    toast.error('Erro ao copiar link.')
   }
 }
 
-// --- Upload Avatar ---
 function triggerAvatarEdit() {
   fileInput.value?.click()
 }
@@ -81,18 +83,16 @@ async function onFileSelected(event: Event) {
     formData.append('image', file)
 
     isUploading.value = true
-    toast.info('Enviando sua nova foto...')
+    toast.info('Enviando foto...')
 
     try {
       const { data } = await api.post('/uploads', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      const newAvatarUrl = data.url
-      await portfolioStore.updateAvatar(newAvatarUrl)
-      toast.success('Foto de perfil atualizada com sucesso!')
+      await portfolioStore.updateAvatar(data.url)
+      toast.success('Foto atualizada!')
     } catch (error) {
-      console.error('Erro no processo de avatar:', error)
-      toast.error('Erro ao atualizar foto. Tente novamente.')
+      toast.error('Erro ao enviar foto.')
     } finally {
       isUploading.value = false
       if (fileInput.value) fileInput.value.value = ''

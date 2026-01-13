@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { api } from '@/services/api'
 import { useAuthStore } from './auth'
 
-// --- Interfaces ---
 export interface Project {
   id: number
   title: string
@@ -66,8 +65,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   })
 
   // --- Project Actions ---
-  
-  // BUSCAR PROJETOS 
   async function fetchProjects() {
     isLoading.value = true
     try {
@@ -95,7 +92,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
-  // CRIAR PROJETO 
   async function createNewProject(newProjectData: Partial<Project>) {
     try {
       const payload = {
@@ -139,7 +135,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
-  // ATUALIZAR PROJETO
   async function updateProject(project: Partial<Project>) {
     if (!project.id) return
 
@@ -159,7 +154,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       if (index !== -1) {
         projects.value[index] = { 
           ...projects.value[index], 
-          ...project,             
+          ...project,              
           tags: payload.tags        
         } as Project
       }
@@ -170,15 +165,17 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   }
 
   // --- Profile Actions ---
-  async function fetchUserProfile() {
-    const userId = authStore.user?.id
-    if (!userId) return
+  async function fetchUserProfile(id?: number) {
+    const targetId = id || authStore.user?.id
+    
+    if (!targetId) return
 
     try {
-      const { data } = await api.get(`/users/public/${userId}`)
+      const { data } = await api.get(`/users/${targetId}/portfolio`)
+      
       userProfile.value = {
         name: data.name,
-        role: data.role,
+        role: data.role || 'Dev',
         location: data.location || '',
         bio: data.bio || '',
         avatarUrl: data.avatarUrl || '',
@@ -189,14 +186,13 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       }
     } catch (error) {
       console.error('Fetch profile error:', error)
+      throw error
     }
   }
 
   async function updateUserProfile(newProfile: UserProfile) {
-    // Clone para remover referências reativas antes de enviar
     const cleanData = JSON.parse(JSON.stringify(newProfile))
     
-    // Atualiza localmente
     userProfile.value = { ...newProfile }
 
     try {
@@ -249,7 +245,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     projects, 
     userProfile, 
     isLoading,
-    fetchProjects,
+    fetchProjects, 
     createNewProject, 
     removeProject, 
     updateProject, 

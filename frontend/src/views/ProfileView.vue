@@ -2,13 +2,15 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePortfolioStore, type UserProfile } from '@/stores/portfolio'
+import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 
-// --- Setup & State ---
-const store = usePortfolioStore()
+const portfolioStore = usePortfolioStore()
+const authStore = useAuthStore()
 const toast = useToastStore()
-const { userProfile } = storeToRefs(store)
+const { userProfile } = storeToRefs(portfolioStore)
 
+// Estado Local
 const form = reactive<UserProfile>({
   name: '', role: '', location: '', bio: '', avatarUrl: '',
   skills: [], social: {}, experiences: [], education: []
@@ -17,33 +19,69 @@ const form = reactive<UserProfile>({
 const newSkill = ref('')
 const isSaving = ref(false)
 const hasUnsavedChanges = ref(false)
+const isLoading = ref(true)
 let originalSnapshot = '' 
 
-// --- UI Control ---
+// Controle de UI
 const expandedExpId = ref<number | null>(null)
 const expandedEduId = ref<number | null>(null)
 
 function toggleExp(id: number) { expandedExpId.value = expandedExpId.value === id ? null : id }
 function toggleEdu(id: number) { expandedEduId.value = expandedEduId.value === id ? null : id }
 
-// --- Lifecycle & Change Detection ---
-onMounted(async () => {
-  await store.fetchUserProfile()
-  Object.assign(form, JSON.parse(JSON.stringify(userProfile.value)))
+// Preenchimento do Form
+function fillForm(data: UserProfile) {
+  if (!data) return
+  
+  form.name = data.name || ''
+  form.role = data.role || ''
+  form.location = data.location || ''
+  form.bio = data.bio || ''
+  form.avatarUrl = data.avatarUrl || ''
+  form.skills = [...(data.skills || [])]
+  form.social = { ...(data.social || {}) }
+  form.experiences = JSON.parse(JSON.stringify(data.experiences || []))
+  form.education = JSON.parse(JSON.stringify(data.education || []))
+
   updateSnapshot()
-})
+}
 
 function updateSnapshot() {
   originalSnapshot = JSON.stringify(form)
   hasUnsavedChanges.value = false
 }
 
+onMounted(async () => {
+  isLoading.value = true
+  try {
+    if (!authStore.user) {
+      await authStore.checkAuth()
+    }
+    if (authStore.user?.id) {
+      await portfolioStore.fetchUserProfile(authStore.user.id)
+    }
+    if (userProfile.value) {
+      fillForm(userProfile.value)
+    }
+  } catch (error) {
+    console.error(error)
+    toast.error('Erro ao carregar dados.')
+  } finally {
+    isLoading.value = false
+  }
+})
+
+watch(userProfile, (newData) => {
+  if (newData && !hasUnsavedChanges.value) fillForm(newData)
+}, { deep: true })
+
 watch(form, (newVal) => {
+  if (isLoading.value) return 
   const currentJson = JSON.stringify(newVal)
   hasUnsavedChanges.value = currentJson !== originalSnapshot
 }, { deep: true })
 
-// --- Actions ---
+
 async function handleAddSkill() {
   const skill = newSkill.value.trim()
   if (skill && !form.skills.includes(skill)) {
@@ -52,34 +90,47 @@ async function handleAddSkill() {
   }
 }
 
-function handleRemoveSkill(index: number) { form.skills.splice(index, 1) }
+function handleRemoveSkill(index: number) { 
+  form.skills.splice(index, 1) 
+}
 
 function addExperience() {
   const newId = Date.now()
   form.experiences.push({ id: newId, role: '', company: '', period: '', description: '' })
   expandedExpId.value = newId
 }
-function removeExperience(index: number) { form.experiences.splice(index, 1) }
+
+function removeExperience(index: number) { 
+  form.experiences.splice(index, 1) 
+}
 
 function addEducation() {
   const newId = Date.now()
   form.education.push({ id: newId, course: '', institution: '', year: '', certificateUrl: '' })
   expandedEduId.value = newId
 }
-function removeEducation(index: number) { form.education.splice(index, 1) }
+
+function removeEducation(index: number) { 
+  form.education.splice(index, 1) 
+}
 
 async function handleSave() {
   if (!hasUnsavedChanges.value) return;
-
   isSaving.value = true
   try {
-    await store.updateUserProfile(form)
+    await portfolioStore.updateUserProfile(form)
+  
+    if (authStore.user) {
+      authStore.user.name = form.name
+      authStore.user.avatar = form.avatarUrl
+    }
+
     updateSnapshot()
     expandedExpId.value = null
     expandedEduId.value = null
-    toast.success('Currículo atualizado com sucesso!')
+    toast.success('Salvo com sucesso!')
   } catch (error) { 
-    toast.error('Erro ao salvar as informações.')
+    toast.error('Erro ao salvar.')
   } finally { 
     isSaving.value = false 
   }
