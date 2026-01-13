@@ -4,7 +4,7 @@ import { Project } from "../entities/Project";
 type DeleteRequest = {
   id: string;      // ID do projeto a ser deletado
   userId: number;  // ID de quem está tentando deletar
-  userRole: string;// Papel de quem está tentando (admin ou dev)
+  userRole: string;// admin ou dev
 };
 
 export class DeleteProjectService {
@@ -18,13 +18,10 @@ export class DeleteProjectService {
       return new Error("Projeto não encontrado!");
     }
 
-    // LÓGICA DE PERMISSÃO 
-    // Se o usuário NÃO for admin E NÃO for o dono do projeto...
     if (userRole !== "admin" && project.user_id !== userId) {
       return new Error("Você não tem permissão para deletar este projeto!");
     }
 
-    // Se passou, deleta
     await repo.remove(project);
   }
 }

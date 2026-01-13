@@ -7,9 +7,8 @@ export class GetPublicPortfolioService {
 
     const user = await repo.findOne({
       where: { id: id },
-      relations: ["projects"], // Traz os projetos junto!
+      relations: ["projects"], 
       select: {
-        // Selecionamos apenas o que é seguro mostrar publicamente
         id: true,
         name: true,
         role: true,
@@ -20,7 +19,6 @@ export class GetPublicPortfolioService {
         social: true,
         experiences: true,
         education: true,
-        // NÃO selecionamos email, password, createdAt, etc.
       }
     });
 

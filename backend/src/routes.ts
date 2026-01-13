@@ -50,9 +50,7 @@ routes.get("/users/me", authMiddleware, (req, res) => {
     role: (req as any).userRole 
   });
 });
-
-// --- Rota Pública de Perfil (AJUSTADA) ---
-// Antes estava /users/public/:id, mudei para bater com o frontend
+// --- ROTA PÚBLICA ---
 routes.get("/users/:id/portfolio", getPublicPortfolioController.handle);
 
 // --- Rotas de Projetos ---
