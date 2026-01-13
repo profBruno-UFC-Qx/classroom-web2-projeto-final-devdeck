@@ -1,0 +1,85 @@
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css");
+
+:root {
+  /* --- Cores Primárias --- */
+  --color-primary: #0c1f44;
+  --color-primary-1: #406bc2;
+  --color-accent: #00C2E0;
+
+  /* --- Cores Secundárias --- */
+  --color-purple-1: #6d32ed;
+  --color-secondary: #5f02a6;
+  --color-secondary-1: #d6c0e6;
+  --color-secondary-2: #b665f3ec;
+  --color-highlight: #ff0099d2;
+
+  /* --- UI & Texto --- */
+  --color-background: #e5e4f3;
+  --color-surface: #FFFFFF;
+  --color-text: #0C1F44;
+  --color-text-2: #855cc6aa;
+  --color-text-light: #F8F9FA;
+}
+
+/* --- Reset & Base Layout --- */
+html, body, #app {
+  height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; 
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: 'Montserrat', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Links --- */
+a {
+  text-decoration: none;
+  color: var(--color-accent);
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--color-secondary);
+}
+
+/* --- Scrollbar Personalizado --- */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-secondary) transparent;
+}
+
+/* Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-secondary);
+  background-image: linear-gradient(to bottom, var(--color-primary), var(--color-secondary));
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary);
+  background-image: linear-gradient(to bottom, var(--color-secondary), #ff3399);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
