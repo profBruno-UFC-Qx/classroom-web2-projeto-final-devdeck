@@ -32,7 +32,8 @@ export interface Education {
 
 export interface UserProfile {
   name: string
-  role: string
+  role: string    
+  headline: string  
   location: string
   bio: string
   avatarUrl: string
@@ -52,10 +53,12 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   // --- State ---
   const projects = ref<Project[]>([])
   const isLoading = ref(false)
+  
   const userProfile = ref<UserProfile>({
-    name: 'Dev',
-    role: 'Fullstack',
-    location: 'Brasil',
+    name: '',
+    role: '',     
+    headline: '', 
+    location: '',
     bio: '',
     avatarUrl: '',
     skills: [],
@@ -69,12 +72,8 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     isLoading.value = true
     try {
       const userId = authStore.user?.id
-      const url = userId 
-        ? `/projects?limit=50&user_id=${userId}` 
-        : '/projects?limit=50'
-
+      const url = userId ? `/projects?limit=50&user_id=${userId}` : '/projects?limit=50'
       const { data } = await api.get(url)
-      
       projects.value = data.data.map((p: any) => ({
         id: p.id,
         title: p.title,
@@ -103,7 +102,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         images: newProjectData.images || [],
         tags: newProjectData.tags || [] 
       }
-
       const response = await api.post('/projects', payload)
       const created = response.data
       const frontendProject: Project = {
@@ -116,7 +114,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         linkRepo: created.linkRepo,
         linkDeploy: created.linkDeploy
       }
-
       projects.value.unshift(frontendProject)
       return true
     } catch (error) {
@@ -137,7 +134,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
   async function updateProject(project: Partial<Project>) {
     if (!project.id) return
-
     try {
       const payload = {
         title: project.title,
@@ -148,15 +144,10 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         images: project.images || [],
         tags: project.tags || [] 
       }
-
       await api.put(`/projects/${project.id}`, payload)
       const index = projects.value.findIndex(p => p.id === project.id)
       if (index !== -1) {
-        projects.value[index] = { 
-          ...projects.value[index], 
-          ...project,              
-          tags: payload.tags        
-        } as Project
+        projects.value[index] = { ...projects.value[index], ...project, tags: payload.tags } as Project
       }
       return true
     } catch (error: any) {
@@ -167,7 +158,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   // --- Profile Actions ---
   async function fetchUserProfile(id?: number) {
     const targetId = id || authStore.user?.id
-    
     if (!targetId) return
 
     try {
@@ -175,7 +165,8 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       
       userProfile.value = {
         name: data.name,
-        role: data.role || 'Dev',
+        role: data.role || 'dev',         
+        headline: data.headline || '',    
         location: data.location || '',
         bio: data.bio || '',
         avatarUrl: data.avatarUrl || '',
@@ -192,7 +183,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
   async function updateUserProfile(newProfile: UserProfile) {
     const cleanData = JSON.parse(JSON.stringify(newProfile))
-    
     userProfile.value = { ...newProfile }
 
     try {
@@ -217,17 +207,13 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
-  // --- Skill Actions ---
   async function addSkill(skill: string) {
     const s = skill.trim()
     if (s && !userProfile.value.skills.includes(s)) {
       const updatedSkills = [...userProfile.value.skills, s]
       try {
         await updateUserProfile({ ...userProfile.value, skills: updatedSkills })
-      } catch (error) {
-        console.error("Add skill error")
-        throw error
-      }
+      } catch (error) { throw error }
     }
   }
 
@@ -235,10 +221,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     const updatedSkills = userProfile.value.skills.filter(s => s !== skillToRemove)
     try {
       await updateUserProfile({ ...userProfile.value, skills: updatedSkills })
-    } catch (error) {
-      console.error("Remove skill error")
-      throw error
-    }
+    } catch (error) { throw error }
   }
 
   return { 

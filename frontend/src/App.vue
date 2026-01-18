@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
+import GlobalDialog from '@/components/common/GlobalDialog.vue'
 </script>
 
 <template>
+  <GlobalDialog /> <GlobalToast />
   <ToastContainer />
   <main>
     <RouterView />
@@ -11,7 +13,6 @@ import ToastContainer from '@/components/ui/ToastContainer.vue'
 </template>
 
 <style scoped>
-/* --- Global App Layout --- */
 :global(#app) {
   display: flex;
   flex-direction: column;

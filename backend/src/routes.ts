@@ -1,66 +1,65 @@
 import { Router } from "express";
 import { authMiddleware } from "./middlewares/authMiddleware";
+import { ensureAdmin } from "./middlewares/ensureAdmin";
 import { uploadConfig } from "./config/multer";
 
-// Controllers 
-import { CreateUserController } from "./controllers/CreateUserController";
+import { UserController } from "./controllers/UserController";
+import { ProjectController } from "./controllers/ProjectController";
 import { AuthController } from "./controllers/AuthController";
-import { CreateProjectController } from "./controllers/CreateProjectController";
-import { ListProjectsController } from "./controllers/ListProjectsController";
-import { DeleteProjectController } from "./controllers/DeleteProjectController";
-import { UpdateProjectController } from "./controllers/UpdateProjectController";
-import { GetProfileController } from "./controllers/GetProfileController";
+import { AdminController } from "./controllers/AdminController";
 import { UploadController } from "./controllers/UploadController";
-import { UpdateProfileController } from "./controllers/UpdateProfileController";
-import { DeleteUserController } from "./controllers/DeleteUserController";
-import { UpdatePasswordController } from "./controllers/UpdatePasswordController";
-// --- NOVO CONTROLLER ---
-import { GetPublicPortfolioController } from "./controllers/GetPublicPortfolioController";
+import { MessageController } from "./controllers/MessageController";
 
 const routes = Router();
 
-// --- Instâncias ---
-const createUserController = new CreateUserController();
+// Inicialização dos controllers
+const userController = new UserController();
+const projectController = new ProjectController();
 const authController = new AuthController();
-const createProjectController = new CreateProjectController();
-const listProjectsController = new ListProjectsController();
-const deleteProjectController = new DeleteProjectController();
-const updateProjectController = new UpdateProjectController();
-const getProfileController = new GetProfileController();
-const uploadController = new UploadController(); 
-const updateProfileController = new UpdateProfileController();
-const deleteUserController = new DeleteUserController();
-const updatePasswordController = new UpdatePasswordController();
-// --- NOVA INSTÂNCIA ---
-const getPublicPortfolioController = new GetPublicPortfolioController();
+const adminController = new AdminController();
+const uploadController = new UploadController();
+const messageController = new MessageController();
 
-// --- Rotas de Usuário ---
-routes.post("/users", createUserController.handle);
+// Autenticação e Cadastro
 routes.post("/login", authController.handle);
+routes.post("/users", userController.create);
 
-// Rotas de Gestão de Conta 
-routes.delete("/users/me", authMiddleware, deleteUserController.handle);
-routes.put("/users/password", authMiddleware, updatePasswordController.handle);
-
-// Rota de verificação de token 
+// Perfil do Usuário
+routes.get("/users", authMiddleware, userController.index);
 routes.get("/users/me", authMiddleware, (req, res) => {
   return res.json({ 
-    message: "Você está logado!", 
+    message: "Sessão válida", 
     id: (req as any).userId, 
     role: (req as any).userRole 
   });
 });
-// --- ROTA PÚBLICA ---
-routes.get("/users/:id/portfolio", getPublicPortfolioController.handle);
+routes.put("/users/profile", authMiddleware, userController.update);
+routes.put("/users/password", authMiddleware, userController.updatePassword);
+routes.delete("/users/me", authMiddleware, userController.delete);
 
-// --- Rotas de Projetos ---
-routes.post("/projects", authMiddleware, createProjectController.handle);
-routes.get("/projects", listProjectsController.handle);
-routes.delete("/projects/:id", authMiddleware, deleteProjectController.handle);
-routes.put("/projects/:id", authMiddleware, updateProjectController.handle);
+// Projetos
+routes.post("/projects", authMiddleware, projectController.create);
+routes.get("/projects", projectController.index);
+routes.put("/projects/:id", authMiddleware, projectController.update);
+routes.delete("/projects/:id", authMiddleware, projectController.delete);
 
-// --- Uploads & Perfil ---
+// Uploads
 routes.post("/uploads", authMiddleware, uploadConfig.single("image"), uploadController.handle);
-routes.put("/users/profile", authMiddleware, updateProfileController.handle);
+
+// Mensagens
+routes.post("/messages", authMiddleware, messageController.send);
+routes.get("/messages/inbox", authMiddleware, messageController.listMine);
+
+// Portfólio Público
+routes.get("/users/:id/portfolio", userController.getPortfolio);
+
+// Administração (Admin Only)
+routes.get("/admin/users", authMiddleware, ensureAdmin, adminController.listUsers);
+routes.delete("/admin/users/:id", authMiddleware, ensureAdmin, adminController.deleteUser);
+routes.patch("/admin/users/:id/role", authMiddleware, ensureAdmin, adminController.updateRole);
+
+routes.get("/admin/projects", authMiddleware, ensureAdmin, adminController.listProjects);
+routes.put("/admin/projects/:id", authMiddleware, ensureAdmin, adminController.updateProject);
+routes.delete("/admin/projects/:id", authMiddleware, ensureAdmin, adminController.deleteProject);
 
 export { routes };

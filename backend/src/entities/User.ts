@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from "typeorm";
 import { Project } from "./Project";
+import { Message } from "./Message";
 
 @Entity("users")
 export class User {
@@ -17,6 +18,9 @@ export class User {
 
   @Column({ default: "dev" })
   role!: string;
+
+  @Column({ default: "" }) 
+  headline!: string; 
 
   @Column({ nullable: true })
   location!: string;
@@ -44,4 +48,10 @@ export class User {
 
   @OneToMany(() => Project, (project) => project.user)
   projects!: Project[];
+  
+  @OneToMany(() => Message, (message) => message.sender)
+  sentMessages!: Message[];
+
+  @OneToMany(() => Message, (message) => message.receiver)
+  receivedMessages!: Message[];
 }
