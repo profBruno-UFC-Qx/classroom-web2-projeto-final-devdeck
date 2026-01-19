@@ -97,7 +97,7 @@ async function handleSend() {
 <style scoped>
 .modal-overlay {
   position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0, 0, 0, 0.05); 
+  background: rgba(0, 0, 0, 0.503); 
   backdrop-filter: blur(8px); 
   display: flex; align-items: center; justify-content: center; padding: 1rem;
 }
@@ -106,7 +106,7 @@ async function handleSend() {
   width: 100%; max-width: 500px;
   border-radius: 16px; overflow: hidden;
   display: flex; flex-direction: column;
-  background: rgba(12, 0, 55, 0.592);
+  background: rgba(12, 0, 55, 0.798);
   backdrop-filter: blur(25px); 
   -webkit-backdrop-filter: blur(25px);
   border: 1px solid rgba(255, 255, 255, 0.1); 

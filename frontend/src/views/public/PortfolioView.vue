@@ -406,7 +406,7 @@ onMounted(async () => {
 .dev-role { width: 100%; max-width: 250px; margin: 0.5rem auto 1rem auto; padding: 4px 12px; font-size: 0.8rem; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; filter: brightness(1.2); background-color: rgba(255, 255, 255, 0.168); border-radius: 12px; }
 .dev-location { font-size: 0.9rem; color: #ddd; }
 .profile-middle { margin: 2rem 0; }
-.dev-bio { font-size: 0.95rem; color: #eee; line-height: 1.6; margin: 1.6rem 1.2rem; text-align: justify; }
+.dev-bio { font-size: 0.95rem; color: #eee; line-height: 1.6; margin: 1rem 0; text-align: justify; }
 .social-row { display: flex; justify-content: center; gap: 1rem; }
 .social-icon { width: 42px; height: 42px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.3rem; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
 .social-icon:hover { background: white; color: var(--color-primary); transform: translateY(-3px); border-color: transparent; }
