@@ -5,20 +5,11 @@ node_modules/
 dist/
 
 # Variáveis de Ambiente 
-.env
-
-# Banco de Dados (SQLite)
-*.sqlite
-*.db
-database.sqlite
+#.env
 
 # Logs
 *.log
 npm-debug.log*
-
-# Uploads (Mantém a pasta, mas ignora os arquivos dentro)
-uploads/*
-!uploads/.gitkeep
 
 # Editor
 .vscode/
